@@ -1,10 +1,9 @@
-## Prometheus Notes
-
-
+<img src="img/logo.png">
 
 
 Run docker solution
 ```
+cd docker-solution
 docker-compose build
 docker-compose up
 ```
