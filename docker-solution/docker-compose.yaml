@@ -1,0 +1,159 @@
+version: '3.1'
+services:
+# Prometheus
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - .config/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+    ports:
+      - '9090:9090'
+    networks:
+      prometheus-network:
+ 
+# Node Exporter
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter
+    ports:
+      - '9100:9100'
+    networks:
+      prometheus-network:
+ 
+# Grafana
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    user: "0" #[ Execute  id -u in terminal to find the user id from where you are invoking docker compose]
+    volumes:
+      - /opt/grafana_db:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    depends_on:
+      - prometheus
+    ports:
+      - '3000:3000'
+    networks:
+      prometheus-network:
+
+# Prometheus Demo Service
+  prometheus-demo-service:
+    container_name: prometheus-demo-service
+    image: julius/prometheus-demo-service
+    depends_on:
+      - prometheus
+    ports:
+      - '8080:8080'
+    networks:
+      prometheus-network:
+
+# cAdvisor     
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/google-containers/cadvisor:v0.36.0
+    depends_on:
+      - prometheus
+    ports:
+      - '8081:8080'
+    volumes:  
+      - //var/run/docker.sock:/var/run/docker.sock
+      - //:/rootfs:ro
+      - //var/run:/var/run:rw
+      - //sys:/sys:ro
+      - //var/lib/docker/:/var/lib/docker:ro
+      - //dev/disk/:/dev/disk:ro 
+    networks:
+      prometheus-network:
+
+# golang-app
+  golang-app:
+    container_name: golang-app
+    depends_on:
+      - prometheus
+    build:
+      context: ./golang-app
+    ports:
+      - '8005:8005'
+    networks:
+      prometheus-network:
+
+# Alert Manager
+  # alertmanager:
+  #   container_name: alertmanager
+  #   image: prom/alertmanager:latest
+  #   volumes:
+  #     - .config/alertmanager:/etc/alertmanager
+  #   command:
+  #     - '--config.file=/etc/alertmanager/alertmanager.yml'
+  #   ports:
+  #     - '9093:9093'
+  #   networks:
+  #     prometheus-network:
+ 
+# Black Exporter
+  # blackbox-exporter:
+  #    container_name: blackbox-exporter
+  #    image: prom/blackbox-exporter
+  #    dns: 8.8.8.8
+  #    restart: always
+  #    ports:
+  #      - "9115:9115"
+  #    volumes:
+  #      - ".config/blackbox_exporter:/config"
+  #    command: 
+  #      - '--config.file=/config/blackbox.yml'
+  #    networks:
+  #      prometheus-network:
+ 
+# Push Gateway
+  # pushgateway:
+  #   container_name: pushgateway
+  #   image: prom/pushgateway
+  #   restart: unless-stopped
+  #   expose:
+  #     - 9091
+  #   ports:
+  #     - "9091:9091"
+  #   networks:
+  #     prometheus-network:
+  #   labels:
+  #     org.label-schema.group: "monitoring"
+ 
+# MySQL
+  # db:
+  #   container_name: mysql
+  #   image: mysql:5.7
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #     MYSQL_DATABASE: docker
+  #     MYSQL_USER: docker
+  #     MYSQL_PASSWORD: docker
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - ".config/mysql:/var/lib/mysql"
+  #   command: --default-authentication-plugin=mysql_native_password
+  #   networks:
+  #     prometheus-network:
+ 
+# MySQL Exporter
+  # mysqld-exporter:
+  #   container_name: mysqld-exporter
+  #   image: prom/mysqld-exporter
+  #   restart: always
+  #   environment:
+  #     - DATA_SOURCE_NAME='root:root@(dbhost:3306)/'
+  #   ports:
+  #     - "9104:9104"
+  #   networks:
+  #     prometheus-network:
+ 
+# Network Configuration
+networks:
+  prometheus-network:
+    driver: bridge
+    name: prometheus-network
