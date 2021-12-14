@@ -1,0 +1,16 @@
+{
+    "services": [
+        {
+        "id": "node-exporter",
+        "name": "node-exporter",
+        "address": "node-exporter",
+        "port": 9100
+        },
+        {
+        "id": "prometheus-demo-service",
+        "name": "prometheus-demo-service",
+        "address": "prometheus-demo-service",
+        "port": 8080
+        }
+    ]
+}

@@ -1,0 +1,72 @@
+version: '3.1'
+services:
+# Prometheus
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:latest
+    volumes:
+      - .config/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-lifecycle'
+    ports:
+      - '9090:9090'
+    networks:
+      prometheus-network:
+ 
+# Node Exporter
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter
+    ports:
+      - '9100:9100'
+    networks:
+      prometheus-network:
+ 
+# Grafana
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    user: "0" #[ Execute  id -u in terminal to find the user id from where you are invoking docker compose]
+    volumes:
+      - /opt/grafana_db:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    depends_on:
+      - prometheus
+    ports:
+      - '3000:3000'
+    networks:
+      prometheus-network:
+
+# Prometheus Demo Service
+  prometheus-demo-service:
+    container_name: prometheus-demo-service
+    image: julius/prometheus-demo-service
+    depends_on:
+      - prometheus
+    ports:
+      - '8080:8080'
+    networks:
+      prometheus-network:
+
+  # consul agent
+  consul-agent:
+    container_name: consul-agent
+    image: consul
+    depends_on:
+      - prometheus
+    ports:
+      - '8500:8500'
+      - '8600:8600'
+    command: ["consul", "agent", "-dev", "-config-file=/app/demo-service.json", "-log-level=debug", "-client=0.0.0.0"]
+    volumes:
+    - .config/consul:/app
+    networks:
+      prometheus-network:
+ 
+# Network Configuration
+networks:
+  prometheus-network:
+    driver: bridge
+    name: prometheus-network
