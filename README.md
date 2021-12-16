@@ -141,3 +141,28 @@ Metric Types:
 - Gauges track values that can go up or down, like temperatures or disk space.
 - Summaries calculate client-side-calculated quantiles from a set of observations, like request latency percentiles. They also track the total count and total sum of observations (like the total count of requests and the total sum of request durations).
 - Histograms track bucketed histograms of a set of observations like request latencies. They also track the total count and total sum of observations.
+
+## Kubernetes solution 
+
+```
+kubectl create clusterrolebinding permissive-binding --clusterrole=cluster-admin --user=admin --user=kubelet --group=system:serviceaccounts
+```
+
+```
+cd k8s-solution
+kubectl apply -f . -nprometheus
+```
+
+Aggregate CPU usage for all containers,summed up by Kubernetes namespace:
+```
+sum by(namespace) (rate(container_cpu_usage_seconds_total[1m]))
+```
+
+```
+- `prometheus.io/scrape`: Only scrape services that have a value of `true`
+- `prometheus.io/scheme`: If the metrics endpoint is secured then you will need
+  to set this to `https` & most likely set the `tls_config` of the scrape config.
+- `prometheus.io/path`: If the metrics path is not `/metrics` override this.
+- `prometheus.io/port`: If the metrics are exposed on a different port to the
+  service then set this appropriately.
+```
